@@ -16,12 +16,12 @@ app.use(morgan("combined"));
 app.use(cors());
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
 });
 app.use("/api/", apiLimiter);
 
-// Mount routes
+// Mount API routes
 app.use("/api/openai", openAiRouter);
 app.use("/api/youtube", youtubeRouter);
 app.use("/api/web", webRouter);
@@ -31,9 +31,10 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// Export the Express app (so Vercel can use it as a serverless function)
 export default app;
 
-// If running locally, start the server
+// If running locally, start the server:
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
