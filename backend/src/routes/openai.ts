@@ -1,22 +1,24 @@
-import { Router } from "express";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import axios from "axios";
 
-export const router = Router();
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Allow only GET requests (or change to POST if you prefer)
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
-router.get("/", async (req, res) => {
   const query = req.query.query as string;
   if (!query) {
     return res.status(400).json({ error: "Missing query parameter" });
   }
 
-  try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return res
-        .status(500)
-        .json({ error: "OpenAI API key is not configured" });
-    }
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "OpenAI API key is not configured" });
+  }
 
+  try {
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
@@ -37,7 +39,6 @@ router.get("/", async (req, res) => {
     if (!answer) {
       return res.status(500).json({ error: "No answer returned from OpenAI" });
     }
-
     res.json({ answer });
   } catch (error: any) {
     if (error.response) {
@@ -54,4 +55,4 @@ router.get("/", async (req, res) => {
     console.error("OpenAI API error:", error.message);
     res.status(500).json({ error: "Failed to get a response from OpenAI" });
   }
-});
+}

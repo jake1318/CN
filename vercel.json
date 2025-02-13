@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/src/index.ts",
+      "src": "backend/api/openai.ts",
       "use": "@vercel/node"
     },
     {
@@ -12,7 +12,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/backend/src/index.ts" },
+    { "source": "/api/openai", "destination": "/backend/api/openai.ts" },
     { "source": "/(.*)", "destination": "/frontend/dist/index.html" }
   ]
 }
