@@ -38,28 +38,26 @@ export default function Search() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `/api/openai?query=${encodeURIComponent(searchQuery)}`
-      );
+      // POST request to the backend function
+      const response = await fetch("/api/openai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: searchQuery }),
+      });
+
       if (!response.ok) {
-        throw new Error("Search request failed");
+        throw new Error("OpenAI search request failed");
       }
-      const aiData = await response.json();
+      const data = await response.json();
 
-      const ytResponse = await fetch(
-        `/api/youtube?query=${encodeURIComponent(searchQuery)}`
-      );
-      const ytData = await ytResponse.json();
-
-      const webResponse = await fetch(
-        `/api/web?query=${encodeURIComponent(searchQuery)}`
-      );
-      const webData = await webResponse.json();
-
+      // For demonstration, only the AI response is handled.
+      // (You can similarly add calls for YouTube and web search)
       setResults({
-        aiResponse: aiData.answer,
-        youtubeResults: ytData.results,
-        webResults: webData.results,
+        aiResponse: data.reply,
+        youtubeResults: [],
+        webResults: [],
       });
     } catch (error: unknown) {
       setError(
@@ -106,45 +104,7 @@ export default function Search() {
             <h2>AI Response</h2>
             <div className="content">{results.aiResponse}</div>
           </div>
-          {results.youtubeResults.length > 0 && (
-            <div className="result-section youtube-results">
-              <h2>Related Videos</h2>
-              <div className="video-grid">
-                {results.youtubeResults.map((video) => (
-                  <a
-                    key={video.videoId}
-                    href={video.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="video-card"
-                  >
-                    <img src={video.thumbnail} alt={video.title} />
-                    <h3>{video.title}</h3>
-                    <p>{video.description}</p>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-          {results.webResults.length > 0 && (
-            <div className="result-section web-results">
-              <h2>Related Resources</h2>
-              <div className="web-links">
-                {results.webResults.map((result, index) => (
-                  <a
-                    key={index}
-                    href={result.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="web-link-card"
-                  >
-                    <h3>{result.title}</h3>
-                    <p>{result.description}</p>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* You can add sections for YouTube and Web results here */}
         </div>
       )}
     </div>

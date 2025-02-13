@@ -1,58 +1,50 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import axios from "axios";
+import { Configuration, OpenAIApi } from "openai";
+
+// Initialize OpenAI client with the API key from environment variables
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Allow only GET requests (or change to POST if you prefer)
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
+  // Allow only POST requests
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const query = req.query.query as string;
-  if (!query) {
-    return res.status(400).json({ error: "Missing query parameter" });
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "OpenAI API key is not configured" });
+  const { message } = req.body;
+  if (!message) {
+    return res.status(400).json({ error: "Missing message in request body" });
   }
 
   try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: query }],
-        temperature: 0.7,
-        max_tokens: 150,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-      }
-    );
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: message }],
+      temperature: 0.7,
+      max_tokens: 150,
+    });
 
-    const answer = response.data.choices[0]?.message?.content;
-    if (!answer) {
+    const reply = response.data.choices[0]?.message?.content;
+    if (!reply) {
       return res.status(500).json({ error: "No answer returned from OpenAI" });
     }
-    res.json({ answer });
+    return res.status(200).json({ reply });
   } catch (error: any) {
-    if (error.response) {
-      console.error("OpenAI API error:", error.response.data);
-      if (error.response.status === 429) {
-        return res
-          .status(429)
-          .json({ error: "Rate limit exceeded. Please try again later." });
-      }
+    console.error("OpenAI API error:", error.response?.data || error.message);
+    if (error.response && error.response.status === 429) {
       return res
-        .status(error.response.status)
-        .json({ error: error.response.data.error.message });
+        .status(429)
+        .json({ error: "Rate limit exceeded. Please try again later." });
     }
-    console.error("OpenAI API error:", error.message);
-    res.status(500).json({ error: "Failed to get a response from OpenAI" });
+    return res
+      .status(500)
+      .json({
+        error:
+          error.response?.data?.error?.message ||
+          "Failed to get response from OpenAI",
+      });
   }
 }
